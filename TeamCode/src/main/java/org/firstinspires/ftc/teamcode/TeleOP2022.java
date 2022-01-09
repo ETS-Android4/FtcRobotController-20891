@@ -113,7 +113,7 @@ public class TeleOP2022 extends LinearOpMode {
 
         m1LDrive.setDirection(DcMotor.Direction.FORWARD);
 
-        m2RDrive.setDirection(DcMotor.Direction.FORWARD);
+        m2RDrive.setDirection(DcMotor.Direction.REVERSE);
 
         m3Hybrid.setDirection(DcMotor.Direction.FORWARD);
 

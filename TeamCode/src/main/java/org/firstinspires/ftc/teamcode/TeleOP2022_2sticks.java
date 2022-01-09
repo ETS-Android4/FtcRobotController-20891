@@ -20,10 +20,10 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 
 
-@TeleOp(name = "VR 20891 TeleOp Solo", group = "Linear Opmode")
+@TeleOp(name = "VR 20891 TeleOp 2 sticks", group = "Linear Opmode")
 
 //@Disabled
-public class TeleOP2022_Solo extends LinearOpMode {
+public class TeleOP2022_2sticks extends LinearOpMode {
 
     private static final int LED_CHANNEL = 5;
 
@@ -179,7 +179,7 @@ public class TeleOP2022_Solo extends LinearOpMode {
 
             double vperednazad = gamepad1.left_stick_y;
 
-            double povorot = gamepad1.left_stick_x*0.7;
+            double povorot = gamepad1.right_stick_x*0.7;
 
             ////////////////////////////////////////////////////
             //начало кода передвижения
