@@ -107,18 +107,29 @@ public class RedLeft extends Robot
 
             if(ShElementPosition==3&&check){
                 check=false;
-
+                setMotorsPower(0.7,0.2);
+                sleep(500);
+                setMotorsPower(0.4,0.4);
+                sleep(700);
             }
             if(ShElementPosition==2&&check){
                 check=false;
-
+                setMotorsPower(0.7,0.2);
+                sleep(500);
+                setMotorsPower(0.4,0.4);
+                sleep(700);
             }
             if(ShElementPosition==1&&check){
                 check=false;
-
+                setMotorsPower(0.7,0.2);
+                sleep(500);
+                setMotorsPower(0.4,0.4);
+                sleep(700);
             }
 
 
+            setMotorsPower(-0.6,-0.6);
+            sleep(1200);
 
         }
 

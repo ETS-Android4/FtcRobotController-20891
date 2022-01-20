@@ -172,14 +172,13 @@ public class TeleOP2022_2sticks extends LinearOpMode {
 
         while (opModeIsActive()) {
 
-            double zagrebalo = gamepad1.left_trigger;
-            double zagrebaloinv = gamepad1.right_trigger;
+            double zagrebalo = gamepad2.left_stick_y;
 
-            double lift = gamepad1.right_stick_y;
+            double lift = gamepad2.right_stick_y;
 
             double vperednazad = gamepad1.left_stick_y;
 
-            double povorot = gamepad1.right_stick_x*0.7;
+            double povorot = gamepad1.right_stick_x;
 
             ////////////////////////////////////////////////////
             //начало кода передвижения
@@ -252,17 +251,13 @@ public class TeleOP2022_2sticks extends LinearOpMode {
 
             //скорость захвата
 
-            if (zagrebalo > 0.05) {
+            if (zagrebalo > 0.05||zagrebalo <0.05) {
                     m3Hybrid.setPower(zagrebalo);
             } else {
                 m3Hybrid.setPower(0);
             }
 
-            if (zagrebaloinv > 0.05) {
-                m3Hybrid.setPower(-zagrebaloinv);
-            } else {
-                m3Hybrid.setPower(0);
-            }
+
 
 
             //скорость лифта
@@ -282,7 +277,7 @@ public class TeleOP2022_2sticks extends LinearOpMode {
 
             //автоподъем на 3 этаж
 
-            if (gamepad1.y) {
+            if (gamepad2.y) {
                 //ElapsedTime lifttime = new ElapsedTime(Resolution.SECONDS);
                 if (touch.isPressed()) {
                     lifttime.reset();
@@ -302,16 +297,23 @@ public class TeleOP2022_2sticks extends LinearOpMode {
 
             //переворот клешни
 
-            if (gamepad1.right_bumper) {
-                s1Rotate.setPosition(1);
+            if (gamepad2.right_bumper) {
+                s1Rotate.setPosition(0.65);
             }
 
             //клешня в начальное положение
 
-            if(gamepad1.left_bumper){
+            if(gamepad2.left_bumper){
                 s1Rotate.setPosition(0);
             }
 
+
+            /*if (lift<0.05){
+                s1Rotate.setPosition(0.34);
+            }
+            if (lift>0.05){
+                s1Rotate.setPosition(0);
+            }*/
 
 
 
