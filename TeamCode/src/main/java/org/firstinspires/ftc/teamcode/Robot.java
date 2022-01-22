@@ -36,15 +36,6 @@ public abstract class Robot extends LinearOpMode {
         return result;
     }
 
-
-
-
-
-
-
-
-
-
     protected void lvl1(){
         m4Lift.setPower(1);
         sleep(400);
@@ -105,17 +96,14 @@ public abstract class Robot extends LinearOpMode {
         m2RDrive.setPower(D2_power);
     }
 
-
-
-    protected void chassisStopMovement() {
-        m1LDrive.setPower(0);
-        m2RDrive.setPower(0);
+    protected void resetMotorsPower() {
+        setMotorsPower(0, 0);
     }
 
     DistanceSensor distance;
     TouchSensor touch;
 
-    protected void initHW(HardwareMap hardwMap) throws RuntimeException {
+    protected void initHW(HardwareMap hardwareMap) throws RuntimeException {
 
         DcMotor m1LDrive = hardwareMap.get(DcMotor.class, "m1 left drive");
 
