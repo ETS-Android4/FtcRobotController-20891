@@ -1,6 +1,3 @@
-
-
-
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.hardware.bosch.BNO055IMU;
@@ -20,35 +17,24 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 
 
-@TeleOp(name = "VR 20891 TeleOp 2 sticks", group = "Linear Opmode")
+
+@TeleOp(name = "VR 20891 TeleOp", group = "Linear Opmode")
 
 //@Disabled
 public class TeleOP2022_2sticks extends LinearOpMode {
 
     private static final int LED_CHANNEL = 5;
-
-    // Declare OpMode members.
+    private final double POWER = 1;
+    private final double COUNTS_PER_INCH = 17.1;
     private ElapsedTime runtime = new ElapsedTime();
-    private ElapsedTime lifttime = new ElapsedTime(5);
+    private ElapsedTime liftTime = new ElapsedTime(5);
 
+    double countValue(double value) {
+        if (Math.abs(value) < 0.02) return 0;
 
-
-    //private DcMotor m3Hybrid = null;
-
-
-
-
-
-    double magic(double input) {
-        if(Math.abs(input)<0.02){
-
-            double nol=0;
-            return nol;
-        } else{
-            return Math.signum(input) * (0.9* Math.pow(Math.abs(input), 2)+0.1);
-        }
+        return Math.signum(value) * (0.9 * Math.pow(Math.abs(value), 2) + 0.1);
     }
-    protected double BatteryVoltage() {
+    protected double getBatteryVoltage() {
         double result = Double.POSITIVE_INFINITY;
         for (VoltageSensor sensor : hardwareMap.voltageSensor) {
             double voltage = sensor.getVoltage();
@@ -59,323 +45,190 @@ public class TeleOP2022_2sticks extends LinearOpMode {
         return result;
     }
 
+    DistanceSensor distance;
+    TouchSensor touch;
 
-
-
-
-
-
-
-      DistanceSensor distance;
-      TouchSensor touch;
-
-
-    /**
-     * Calculate the power in the y direction
-     * @param desiredAngle angle on the y axis
-     * @param speed robot's speed
-     * @return the y vector
-     */
-    private double calculateY(double desiredAngle, double speed) {
-        return Math.cos(Math.toRadians(desiredAngle)) * speed;
-    }
-
-    /**
-     * End of functions declaration
-     */
-    final double COUNTS_PER_INCH = 17.1;
     @Override
     public void runOpMode() {
-
-        telemetry.addData("Status", "Initialized");
-        telemetry.update();
-
-        // HardWare map
-        DcMotor m1LDrive = hardwareMap.get(DcMotor.class, "m1 left drive");
-        DcMotor m2RDrive = hardwareMap.get(DcMotor.class, "m2 right drive");
+        //region HARDWARE&TELEMETRY MAP INIT
+        //hw map
+        DcMotor leftDrive = hardwareMap.get(DcMotor.class, "m1 left drive");
+        DcMotor rightDrive = hardwareMap.get(DcMotor.class, "m2 right drive");
         DcMotor m3Hybrid = hardwareMap.get(DcMotor.class, "m3 hybrid");
         DcMotor m4Lift = hardwareMap.get(DcMotor.class, "m4 lift");
         Servo s1Rotate = hardwareMap.get(Servo.class, "s1 rotate");
         Servo s2Zahlop = hardwareMap.get(Servo.class, "s2 Zahlop");
         touch = hardwareMap.get(TouchSensor.class, "Touch");
         distance = hardwareMap.get(DistanceSensor.class, "Distance");
-
+        //telemetry
+        Orientation telemetryAngles;
         BNO055IMU imu;
-        Orientation angles;
         BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
         parameters.angleUnit = BNO055IMU.AngleUnit.DEGREES;
         imu = hardwareMap.get(BNO055IMU.class, "imu");
         imu.initialize(parameters);
-        angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
+        telemetryAngles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
+        telemetry.addData("Status", "Initialized");
+        telemetry.update();
+        //endregion
 
-
-
-        m1LDrive.setDirection(DcMotor.Direction.FORWARD);
-
-        m2RDrive.setDirection(DcMotor.Direction.REVERSE);
-
+        //region DIRECTIONS INIT
+        leftDrive.setDirection(DcMotor.Direction.FORWARD);
+        rightDrive.setDirection(DcMotor.Direction.FORWARD);
         m3Hybrid.setDirection(DcMotor.Direction.FORWARD);
-
         m4Lift.setDirection(DcMotor.Direction.FORWARD);
         m4Lift.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         m4Lift.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-
-        m1LDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-
-        m2RDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-
+        leftDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        rightDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         m3Hybrid.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-
         m4Lift.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-
-
-
-
+        //endregion
 
         waitForStart();
         runtime.reset();
 
+        double leftDriveLeftOffset = 0;
+        double leftDriveRightOffset = 0;
+        double leftDriveUpOffset = 0;
+        double leftDriveDownOffset = 0;
 
-        double m1DrivePower;
-        double m2DrivePower;
+        double rightDriveLeftOffset = 0;
+        double rightDriveRightOffset = 0;
+        double rightDriveUpOffset = 0;
+        double rightDriveDownOffset = 0;
 
-        double m1DrivePowerfordrivetofoundation=0;
-        double m2DrivePowerfordrivetofoundation=0;
-
-        double m1DrivePowerfordrivetofoundation2=0;
-        double m2DrivePowerfordrivetofoundation2=0;
-
-        double m1DrivePowerfordrivetofoundation1=0;
-        double m2DrivePowerfordrivetofoundation1=0;
-
-        double m1DrivePowerfordrivetofoundation11=0;
-        double m2DrivePowerfordrivetofoundation11=0;
-
-        double seconds;
-
-        String positionServo = "not ready";
-
-        //s1Rotate.setPosition(0);
-        double voltage = BatteryVoltage();
+        /*String positionServo = "not ready";
+        double voltage = getBatteryVoltage();
         double koeff = 13.0 / voltage;
-        koeff = Math.pow(koeff, 1.25);
-
-
-
-
-
-
-        //ТЕЛЕОП НАЧИНАЕТСЯ
-
-
-
+        koeff = Math.pow(koeff, 1.25);*/
 
         while (opModeIsActive()) {
+            //region MOVEMENT
+            double horizontalDrive = countValue(gamepad1.right_stick_y);
+            double verticalDrive = countValue(gamepad1.left_stick_y);
 
-            double zagrebalo = gamepad2.left_stick_y;
+            double m1DrivePower = horizontalDrive
+                    + rightDriveDownOffset
+                    + rightDriveUpOffset
+                    + rightDriveLeftOffset
+                    + rightDriveRightOffset;
+            double m2DrivePower = verticalDrive
+                    + leftDriveDownOffset
+                    + leftDriveUpOffset
+                    + leftDriveLeftOffset
+                    + leftDriveRightOffset;
 
-            double lift = gamepad2.right_stick_y;
-
-            double vperednazad = gamepad1.left_stick_y;
-
-            double povorot = gamepad1.right_stick_x;
-
-            ////////////////////////////////////////////////////
-            //начало кода передвижения
-
-            povorot = magic(povorot);
-            vperednazad = magic(vperednazad);
-
-            m1DrivePower = vperednazad+m2DrivePowerfordrivetofoundation1+m2DrivePowerfordrivetofoundation11+m2DrivePowerfordrivetofoundation2+m2DrivePowerfordrivetofoundation-povorot;
-
-            m2DrivePower = vperednazad+m1DrivePowerfordrivetofoundation1+m1DrivePowerfordrivetofoundation11+m1DrivePowerfordrivetofoundation2+m1DrivePowerfordrivetofoundation+povorot;
-
-            double mochs=1;
-            double max = Math.max(m1DrivePower, m2DrivePower);
-            // Send calculated power to wheels
-            if (max >= 1) {
-                m1LDrive.setPower(mochs*m1DrivePower *1/ max);
-                m2RDrive.setPower(mochs*m2DrivePower *1/ max);
+            double maxDrivePower = Math.max(m1DrivePower, m2DrivePower);
+            if (maxDrivePower >= 1) {
+                leftDrive.setPower(POWER * m1DrivePower / maxDrivePower);
+                rightDrive.setPower(POWER * m2DrivePower / maxDrivePower);
             } else {
-                m1LDrive.setPower(mochs*m1DrivePower*1);
-                m2RDrive.setPower(mochs*m2DrivePower*1);
+                leftDrive.setPower(POWER * m1DrivePower);
+                rightDrive.setPower(POWER * m2DrivePower);
             }
 
-//----------------------------------------
+            telemetryAngles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
 
-
-
-            //углы
-
-            angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
-
-            //медленное движение
-
-            if(gamepad1.dpad_right){
-                m1DrivePowerfordrivetofoundation11=0.3;
-                m2DrivePowerfordrivetofoundation11=-0.3;//мотор енкодера с минусом
-            }else{
-                m1DrivePowerfordrivetofoundation11=0;
-                m2DrivePowerfordrivetofoundation11=0;
-            }
-            if(gamepad1.dpad_left){
-                m1DrivePowerfordrivetofoundation1=-0.3;
-                m2DrivePowerfordrivetofoundation1=0.3;
-            }else{
-                m1DrivePowerfordrivetofoundation1=0;
-                m2DrivePowerfordrivetofoundation1=0;
-            }
-            if(gamepad1.dpad_down){
-                m1DrivePowerfordrivetofoundation=-0.33;
-                m2DrivePowerfordrivetofoundation=-0.33;
-            }else{
-                m1DrivePowerfordrivetofoundation=0;
-                m2DrivePowerfordrivetofoundation=0;
-            }
-            if(gamepad1.dpad_up){
-                m1DrivePowerfordrivetofoundation2=0.33;
-                m2DrivePowerfordrivetofoundation2=0.33;
-            }else{
-                m1DrivePowerfordrivetofoundation2=0;
-                m2DrivePowerfordrivetofoundation2=0;
-            }
-
-
-            /////////////////////////////////////////
-            //конец кода передвижения
-
-
-
-
-
-
-            //скорость захвата
-
-            if (zagrebalo > 0.05||zagrebalo <0.05) {
-                    m3Hybrid.setPower(zagrebalo);
+            if (gamepad1.dpad_up) {
+                leftDriveUpOffset = 0.3;
+                rightDriveUpOffset = -0.3;
             } else {
-                m3Hybrid.setPower(0);
+                leftDriveUpOffset = 0;
+                rightDriveUpOffset = 0;
             }
 
-
-
-
-            //скорость лифта
-
-            if (lift !=0){
-                m4Lift.setPower(lift);
-            } else {m4Lift.setPower(0);}
-
-
-            //проверка по кнопке
-
-            if (touch.isPressed() & lift > 0) {
-                    m4Lift.setPower(0);
-                    lift = 0;
+            if (gamepad1.dpad_down) {
+                leftDriveDownOffset = -0.3;
+                rightDriveDownOffset = 0.3;
+            } else {
+                leftDriveDownOffset = 0;
+                rightDriveDownOffset = 0;
             }
 
-
-            //автоподъем на 3 этаж
-
-            if (gamepad2.y) {
-                //ElapsedTime lifttime = new ElapsedTime(Resolution.SECONDS);
-                if (touch.isPressed()) {
-                    lifttime.reset();
-                } else {}
-
+            if (gamepad1.dpad_left) {
+                leftDriveLeftOffset = -0.33;
+                rightDriveLeftOffset = -0.33;
+            } else {
+                leftDriveLeftOffset = 0;
+                rightDriveLeftOffset = 0;
             }
 
-            //время автоподъема
-
-            if (lifttime.milliseconds() < 1300) {
-                m4Lift.setPower(-1);
-                s1Rotate.setPosition(0.4);
+            if (gamepad1.dpad_right) {
+                leftDriveRightOffset = 0.33;
+                rightDriveRightOffset = 0.33;
+            } else {
+                leftDriveRightOffset = 0;
+                rightDriveRightOffset = 0;
             }
+            //endregion
 
-
-
-
-            //переворот клешни
-
-            if (gamepad2.right_bumper) {
-                s1Rotate.setPosition(0.65);
-            }
-
-            //клешня в начальное положение
-
-            if(gamepad2.left_bumper){
-                s1Rotate.setPosition(0);
-            }
-
-
-            /*if (lift<0.05){
-                s1Rotate.setPosition(0.34);
-            }
-            if (lift>0.05){
-                s1Rotate.setPosition(0);
-            }*/
-
-
-
-            //автокручение карусели за синих
-
-            if (gamepad1.x) {
-                m1LDrive.setPower(0);
-                m2RDrive.setPower(0);
+            //region AUTO_SPIN
+            // blue alliance
+            if (gamepad1.right_bumper) {
+                leftDrive.setPower(0);
+                rightDrive.setPower(0);
                 m3Hybrid.setPower(-0.3);
                 sleep(1111);
                 m3Hybrid.setPower(-1);
                 sleep(489);
                 m3Hybrid.setPower(0);
             }
-
-            //автокручение карусели за красных
-
-            if (gamepad1.b) {
-                m1LDrive.setPower(0);
-                m2RDrive.setPower(0);
+            //red alliance
+            if (gamepad1.left_bumper) {
+                leftDrive.setPower(0);
+                rightDrive.setPower(0);
                 m3Hybrid.setPower(0.3);
                 sleep(1111);
                 m3Hybrid.setPower(1);
                 sleep(489);
                 m3Hybrid.setPower(0);
             }
+            //endregion
 
-
-
-            // Show the elapsed game time and wheel power.
-
-
-            // Телеметрия
-
-//            |
-//            |
-//            |
-//            V
-            {
-
-                telemetry.addData("нажатие кнопки", touch.isPressed());
-
-
-                telemetry.addData("Показания дальномера", distance.getDistance(DistanceUnit.CM));
-
-                telemetry.addData("Status", "Lift Time: " + lifttime.toString());
-                telemetry.addData("Status", "Run Time: " + runtime.toString());
-                telemetry.addData("SErvo status", positionServo);
-                telemetry.addData("SErvo position", s1Rotate.getPosition());
-                telemetry.addData("Podiem position ", m4Lift.getCurrentPosition());
-
-                telemetry.addData("angleofrotate", angles.firstAngle);
-
-                telemetry.update();
-
-
+            //region GRAB
+            if (gamepad2.left_stick_y != 0 && gamepad2.left_stick_y > 0) {
+                m3Hybrid.setPower(gamepad2.left_stick_y);
+            } else {
+                m3Hybrid.setPower(0);
             }
+            //endregion
+
+            //region LIFTING
+            // start lifting
+            if (gamepad2.y && touch.isPressed()) liftTime.reset();
+            // end lifting
+            if (liftTime.milliseconds() < 1300) {
+                m4Lift.setPower(-1);
+                s1Rotate.setPosition(0.4);
+            }
+            // проверка по кнопке
+            if (gamepad2.right_stick_y > 0 & touch.isPressed()) {
+                m4Lift.setPower(0);
+            }
+            //endregion
+
+            //region CLAW
+            // set claw speed
+            if (gamepad2.right_stick_y != 0) m4Lift.setPower(gamepad2.right_stick_y);
+            else m4Lift.setPower(0);
+            // rotate claw
+            if (gamepad2.right_bumper) s1Rotate.setPosition(1);
+            // reset claw rotation
+            if (gamepad2.left_bumper) s1Rotate.setPosition(0);
+            //endregion
+
+            //#region TELEMETRY
+            telemetry.addData("нажатие кнопки", touch.isPressed());
+            telemetry.addData("Показания дальномера", distance.getDistance(DistanceUnit.CM));
+            telemetry.addData("Status", "Lift Time: " + liftTime.toString());
+            telemetry.addData("Status", "Run Time: " + runtime.toString());
+            telemetry.addData("SErvo status", "not ready");
+            telemetry.addData("SErvo position", s1Rotate.getPosition());
+            telemetry.addData("Podiem position ", m4Lift.getCurrentPosition());
+            telemetry.addData("angleofrotate", telemetryAngles.firstAngle);
+            telemetry.update();
+            //endregion
         }
-
     }
-
 }
-
-
-
