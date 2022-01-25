@@ -4,6 +4,7 @@ import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.TouchSensor;
@@ -18,10 +19,13 @@ import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 
 
 
-@TeleOp(name = "VR 20891 TeleOp", group = "Linear Opmode")
+@TeleOp(name = "VR 20891 TeleOp 2 sticks", group = "Linear Opmode")
 
-//@Disabled
+//@Disable
 public class TeleOP2022_2sticks extends LinearOpMode {
+    private static final double SLOW_MULTIPLIER = .3;
+    private static final double VERTICAL_MULTIPLIER = .3;
+    private static final double HORIZONTAL_MULTIPLIER = .33;
 
     private static final int LED_CHANNEL = 5;
     private final double POWER = 1;
@@ -29,9 +33,8 @@ public class TeleOP2022_2sticks extends LinearOpMode {
     private ElapsedTime runtime = new ElapsedTime();
     private ElapsedTime liftTime = new ElapsedTime(5);
 
-    double countValue(double value) {
+    double countDriveValue(double value) {
         if (Math.abs(value) < 0.02) return 0;
-
         return Math.signum(value) * (0.9 * Math.pow(Math.abs(value), 2) + 0.1);
     }
     protected double getBatteryVoltage() {
@@ -50,6 +53,9 @@ public class TeleOP2022_2sticks extends LinearOpMode {
 
     @Override
     public void runOpMode() {
+        telemetry.addData("Status", "Initialized");
+        telemetry.update();
+
         //region HARDWARE&TELEMETRY MAP INIT
         //hw map
         DcMotor leftDrive = hardwareMap.get(DcMotor.class, "m1 left drive");
@@ -68,13 +74,11 @@ public class TeleOP2022_2sticks extends LinearOpMode {
         imu = hardwareMap.get(BNO055IMU.class, "imu");
         imu.initialize(parameters);
         telemetryAngles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
-        telemetry.addData("Status", "Initialized");
-        telemetry.update();
         //endregion
 
         //region DIRECTIONS INIT
         leftDrive.setDirection(DcMotor.Direction.FORWARD);
-        rightDrive.setDirection(DcMotor.Direction.FORWARD);
+        rightDrive.setDirection(DcMotor.Direction.REVERSE);
         m3Hybrid.setDirection(DcMotor.Direction.FORWARD);
         m4Lift.setDirection(DcMotor.Direction.FORWARD);
         m4Lift.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -87,6 +91,8 @@ public class TeleOP2022_2sticks extends LinearOpMode {
 
         waitForStart();
         runtime.reset();
+
+        double speedMultiplier = 1;
 
         double leftDriveLeftOffset = 0;
         double leftDriveRightOffset = 0;
@@ -105,19 +111,23 @@ public class TeleOP2022_2sticks extends LinearOpMode {
 
         while (opModeIsActive()) {
             //region MOVEMENT
-            double horizontalDrive = countValue(gamepad1.right_stick_y);
-            double verticalDrive = countValue(gamepad1.left_stick_y);
+            double horizontalDrive = countDriveValue(gamepad1.left_stick_y);
+            double verticalDrive = countDriveValue(gamepad1.right_stick_x);
 
-            double m1DrivePower = horizontalDrive
+            double m1DrivePower = (verticalDrive
                     + rightDriveDownOffset
                     + rightDriveUpOffset
                     + rightDriveLeftOffset
-                    + rightDriveRightOffset;
-            double m2DrivePower = verticalDrive
+                    + rightDriveRightOffset
+                    + horizontalDrive)
+                    * speedMultiplier;
+            double m2DrivePower = (verticalDrive
                     + leftDriveDownOffset
                     + leftDriveUpOffset
                     + leftDriveLeftOffset
-                    + leftDriveRightOffset;
+                    + leftDriveRightOffset
+                    - horizontalDrive)
+                    * speedMultiplier;
 
             double maxDrivePower = Math.max(m1DrivePower, m2DrivePower);
             if (maxDrivePower >= 1) {
@@ -130,33 +140,36 @@ public class TeleOP2022_2sticks extends LinearOpMode {
 
             telemetryAngles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
 
+            if (gamepad1.right_bumper) speedMultiplier = SLOW_MULTIPLIER;
+            else speedMultiplier = 1;
+
             if (gamepad1.dpad_up) {
-                leftDriveUpOffset = 0.3;
-                rightDriveUpOffset = -0.3;
+                leftDriveUpOffset = VERTICAL_MULTIPLIER;
+                rightDriveUpOffset = -VERTICAL_MULTIPLIER;
             } else {
                 leftDriveUpOffset = 0;
                 rightDriveUpOffset = 0;
             }
 
             if (gamepad1.dpad_down) {
-                leftDriveDownOffset = -0.3;
-                rightDriveDownOffset = 0.3;
+                leftDriveDownOffset = -VERTICAL_MULTIPLIER;
+                rightDriveDownOffset = VERTICAL_MULTIPLIER;
             } else {
                 leftDriveDownOffset = 0;
                 rightDriveDownOffset = 0;
             }
 
             if (gamepad1.dpad_left) {
-                leftDriveLeftOffset = -0.33;
-                rightDriveLeftOffset = -0.33;
+                leftDriveLeftOffset = -HORIZONTAL_MULTIPLIER;
+                rightDriveLeftOffset = -HORIZONTAL_MULTIPLIER;
             } else {
                 leftDriveLeftOffset = 0;
                 rightDriveLeftOffset = 0;
             }
 
             if (gamepad1.dpad_right) {
-                leftDriveRightOffset = 0.33;
-                rightDriveRightOffset = 0.33;
+                leftDriveRightOffset = HORIZONTAL_MULTIPLIER;
+                rightDriveRightOffset = HORIZONTAL_MULTIPLIER;
             } else {
                 leftDriveRightOffset = 0;
                 rightDriveRightOffset = 0;
@@ -165,7 +178,7 @@ public class TeleOP2022_2sticks extends LinearOpMode {
 
             //region AUTO_SPIN
             // blue alliance
-            if (gamepad1.right_bumper) {
+            if (gamepad1.x) {
                 leftDrive.setPower(0);
                 rightDrive.setPower(0);
                 m3Hybrid.setPower(-0.3);
@@ -175,7 +188,7 @@ public class TeleOP2022_2sticks extends LinearOpMode {
                 m3Hybrid.setPower(0);
             }
             //red alliance
-            if (gamepad1.left_bumper) {
+            if (gamepad1.b) {
                 leftDrive.setPower(0);
                 rightDrive.setPower(0);
                 m3Hybrid.setPower(0.3);
@@ -202,9 +215,22 @@ public class TeleOP2022_2sticks extends LinearOpMode {
                 m4Lift.setPower(-1);
                 s1Rotate.setPosition(0.4);
             }
+            // opens full lift
+            if (gamepad2.dpad_up) {
+                s1Rotate.setPosition(0.38);
+                m4Lift.setPower(-0.3);
+            }
+            // set's rotation to 0.55
+            if (gamepad2.dpad_down) {
+                s1Rotate.setPosition(0.55);
+            }
             // проверка по кнопке
             if (gamepad2.right_stick_y > 0 & touch.isPressed()) {
                 m4Lift.setPower(0);
+            }
+            // sets rotation to 0.6
+            if (gamepad1.y) {
+                s1Rotate.setPosition(0.6);
             }
             //endregion
 
